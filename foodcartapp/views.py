@@ -61,6 +61,17 @@ def product_list_api(request):
 @api_view(['POST'])
 def register_order(request):
     order_data = request.data
+    error = None
+    products = order_data.get('products')
+    
+    if products is None:
+        error = 'products: Required field'
+    elif not isinstance(order_data['products'], list):
+        error = 'products: Not list'
+    elif products == []:
+        error = 'products: Empty field'
+    if error:
+        return Response({'error': error}, status=400)
     
     order = Order.objects.create(
         firstname=order_data['firstname'],
@@ -69,7 +80,7 @@ def register_order(request):
         address=order_data['address'],
     )
 
-    for item in order_data['products']:
+    for item in products:
         product = Product.objects.get(id=item['product'])
         OrderItems.objects.create(
             order=order,
