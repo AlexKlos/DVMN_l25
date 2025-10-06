@@ -18,11 +18,11 @@ class OrderSerializer(serializers.ModelSerializer):
     lastname = serializers.CharField(max_length=50)
     phonenumber = PhoneNumberField(region='RU')
     address = serializers.CharField(max_length=200)
-    products = OrderItemSerializer(many=True, allow_empty=False)
+    products = OrderItemSerializer(many=True, allow_empty=False, write_only=True)
 
     class Meta:
         model = Order
-        fields = ['firstname', 'lastname', 'phonenumber', 'address', 'products']
+        fields = ['id', 'firstname', 'lastname', 'phonenumber', 'address', 'products']
 
     def create(self, validated_data):
         products_data = validated_data.pop('products')
@@ -30,4 +30,3 @@ class OrderSerializer(serializers.ModelSerializer):
         for item in products_data:
             OrderItems.objects.create(order=order, **item)
         return order
-    

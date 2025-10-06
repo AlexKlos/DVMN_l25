@@ -64,4 +64,4 @@ def register_order(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     order = serializer.save()
-    return Response({'order_id': order.id}, status=status.HTTP_201_CREATED)
+    return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
