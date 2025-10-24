@@ -2,6 +2,9 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from phonenumber_field.modelfields import PhoneNumberField
 
+from django.db.models import F, Sum, DecimalField, ExpressionWrapper, Value
+from django.db.models.functions import Coalesce
+
 
 class Restaurant(models.Model):
     name = models.CharField(
@@ -35,6 +38,21 @@ class ProductQuerySet(models.QuerySet):
             .values_list('product')
         )
         return self.filter(pk__in=products)
+
+
+class OrderQuerySet(models.QuerySet):
+    def with_total_cost(self):
+        line_total = ExpressionWrapper(
+            F('items__quantity') * F('items__product__price'),
+            output_field=DecimalField(max_digits=8, decimal_places=2),
+        )
+        return self.annotate(
+            total_cost=Coalesce(
+                Sum(line_total),
+                Value(0),
+                output_field=DecimalField(max_digits=8, decimal_places=2),
+            )
+        )
 
 
 class ProductCategory(models.Model):
@@ -129,6 +147,7 @@ class Order(models.Model):
     lastname = models.CharField('фамилия', max_length=50)
     phonenumber = PhoneNumberField('телефон')
     address = models.CharField('адрес', max_length=200)
+    objects = OrderQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'заказ'
