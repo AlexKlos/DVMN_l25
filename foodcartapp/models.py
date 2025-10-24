@@ -43,7 +43,7 @@ class ProductQuerySet(models.QuerySet):
 class OrderQuerySet(models.QuerySet):
     def with_total_cost(self):
         line_total = ExpressionWrapper(
-            F('items__quantity') * F('items__product__price'),
+            F('items__quantity') * F('items__price'),
             output_field=DecimalField(max_digits=8, decimal_places=2),
         )
         return self.annotate(
@@ -174,6 +174,12 @@ class OrderItems(models.Model):
         'количество',
         validators=[MinValueValidator(1)],
         default=1,
+    )
+    price = models.DecimalField(
+        verbose_name='цена в момент заказа',
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(0)]
     )
 
     class Meta:
