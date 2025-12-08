@@ -1,7 +1,8 @@
 from django.contrib import admin
-from django.shortcuts import reverse
+from django.shortcuts import reverse, redirect
 from django.templatetags.static import static
 from django.utils.html import format_html
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from .models import Product
 from .models import ProductCategory
@@ -118,6 +119,19 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = ('id', 'firstname', 'lastname', 'phonenumber', 'address', 'items_count')
     search_fields = ('id', 'firstname', 'lastname', 'phonenumber', 'address')
     inlines = [OrderItemsInline]
+
+    def response_change(self, request, obj):
+        next_url = request.GET.get('next')
+
+        if (
+            next_url
+            and '_continue' not in request.POST
+            and '_addanother' not in request.POST
+            and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()})
+        ):
+            return redirect(next_url)
+
+        return super().response_change(request, obj)
 
     def items_count(self, obj):
         return obj.items.count()
