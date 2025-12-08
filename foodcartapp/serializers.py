@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from phonenumber_field.serializerfields import PhoneNumberField
 from .models import Order, OrderItems, Product
+from django.db import IntegrityError, transaction
+
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(
@@ -26,14 +28,24 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         products_data = validated_data.pop('products')
-        order = Order.objects.create(**validated_data)
-        for item in products_data:
-            product = item['product']
-            quantity = item['quantity']
-            OrderItems.objects.create(
-                order=order,
-                product=product,
-                quantity=quantity,
-                price=product.price,
-            )
-        return order
+        try:
+            with transaction.atomic():
+                order = Order.objects.create(**validated_data)
+    
+                items = []
+                for item in products_data:
+                    product = item['product']
+                    quantity = item['quantity']
+                    items.append(OrderItems(
+                        order=order,
+                        product=product,
+                        quantity=quantity,
+                        price=product.price,
+                    ))
+                OrderItems.objects.bulk_create(items)
+
+                # raise RuntimeError('test rolllback')
+    
+                return order
+        except IntegrityError as e:
+            raise serializers.ValidationError({'non_field_errors': [str(e)]})
