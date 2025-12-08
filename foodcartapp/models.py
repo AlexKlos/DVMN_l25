@@ -53,6 +53,9 @@ class OrderQuerySet(models.QuerySet):
                 output_field=DecimalField(max_digits=8, decimal_places=2),
             )
         )
+    
+    def not_finished(self):
+        return self.exclude(status=Order.STATUS_FINISHED)
 
 
 class ProductCategory(models.Model):
@@ -148,6 +151,25 @@ class Order(models.Model):
     phonenumber = PhoneNumberField('телефон')
     address = models.CharField('адрес', max_length=200)
     objects = OrderQuerySet.as_manager()
+
+    STATUS_NEW = 'NEW'
+    STATUS_ASSEMBLING = 'ASSEMBLING'
+    STATUS_DELIVERING = 'DELIVERING'
+    STATUS_FINISHED = 'FINISHED'
+
+    STATUS_CHOICES = [
+        (STATUS_NEW, 'Новый'),
+        (STATUS_ASSEMBLING, 'Сборка'),
+        (STATUS_DELIVERING, 'Доставка'),
+        (STATUS_FINISHED, 'Завершён'),
+    ]
+
+    status = models.CharField(
+        max_length=12,
+        choices=STATUS_CHOICES,
+        default=STATUS_NEW,
+        db_index=True,
+    )
 
     class Meta:
         verbose_name = 'заказ'
