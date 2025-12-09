@@ -1,5 +1,5 @@
 from django import forms
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Case, When, Value, IntegerField
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
@@ -9,7 +9,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
 
-from foodcartapp.models import Product, Restaurant, Order, OrderItems, RestaurantMenuItem
+from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
 
 
 class Login(forms.Form):
@@ -93,13 +93,22 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
+    status_order = Case(
+        When(status=Order.STATUS_NEW, then=Value(0)),
+        When(status=Order.STATUS_ASSEMBLING, then=Value(1)),
+        When(status=Order.STATUS_DELIVERING, then=Value(2)),
+        default=Value(3),
+        output_field=IntegerField(),
+    )
+
     orders = (
         Order.objects
         .not_finished()
         .with_total_cost()
         .prefetch_related('items__product')
         .select_related('cooking_restaurant')
-        .order_by('id')
+        .annotate(status_order=status_order)
+        .order_by('status_order', 'id')
     )
 
     restaurants = list(
