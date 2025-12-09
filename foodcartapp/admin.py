@@ -116,7 +116,7 @@ class OrderItemsInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'status', 'firstname', 'lastname', 'phonenumber', 'address', 'items_count', 'comment')
+    list_display = ('id', 'status', 'firstname', 'lastname', 'phonenumber', 'address', 'items_count', 'payment_method', 'comment')
     search_fields = ('id', 'firstname', 'lastname', 'phonenumber', 'address')
     inlines = [OrderItemsInline]
 

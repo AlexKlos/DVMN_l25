@@ -161,20 +161,21 @@ class Order(models.Model):
     STATUS_ASSEMBLING = 'ASSEMBLING'
     STATUS_DELIVERING = 'DELIVERING'
     STATUS_FINISHED = 'FINISHED'
-
     STATUS_CHOICES = [
         (STATUS_NEW, 'Новый'),
         (STATUS_ASSEMBLING, 'Сборка'),
         (STATUS_DELIVERING, 'Доставка'),
         (STATUS_FINISHED, 'Завершён'),
     ]
+    status = models.CharField('статус', max_length=12, choices=STATUS_CHOICES, default=STATUS_NEW, db_index=True)
 
-    status = models.CharField(
-        max_length=12,
-        choices=STATUS_CHOICES,
-        default=STATUS_NEW,
-        db_index=True,
-    )
+    PAYMENT_METHOD_CASH = 'cash'
+    PAYMENT_METHOD_NON_CASH = 'non-cash'
+    PAYMENT_METHOD_CHOICES = [
+        (PAYMENT_METHOD_CASH, 'наличные'),
+        (PAYMENT_METHOD_NON_CASH, 'безнал'),
+    ]
+    payment_method = models.CharField('способ оплаты', max_length=10, choices=PAYMENT_METHOD_CHOICES, default=PAYMENT_METHOD_CASH, db_index=True)
 
     class Meta:
         verbose_name = 'заказ'
