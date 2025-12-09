@@ -151,6 +151,7 @@ class Order(models.Model):
     phonenumber = PhoneNumberField('телефон')
     address = models.CharField('адрес', max_length=200)
     objects = OrderQuerySet.as_manager()
+    comment = models.CharField('комментарий', max_length=200, blank=True)
 
     STATUS_NEW = 'NEW'
     STATUS_ASSEMBLING = 'ASSEMBLING'
