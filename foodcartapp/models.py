@@ -4,6 +4,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from django.db.models import F, Sum, DecimalField, ExpressionWrapper, Value
 from django.db.models.functions import Coalesce
+from django.utils import timezone
 
 
 class Restaurant(models.Model):
@@ -152,6 +153,9 @@ class Order(models.Model):
     address = models.CharField('адрес', max_length=200)
     objects = OrderQuerySet.as_manager()
     comment = models.CharField('комментарий', max_length=200, blank=True)
+    registered_at = models.DateTimeField('создан', default=timezone.now, db_index=True)
+    called_at = models.DateTimeField('время звонка', null=True, blank=True, db_index=True)
+    delivered_at = models.DateTimeField('доставлен', null=True, blank=True, db_index=True)
 
     STATUS_NEW = 'NEW'
     STATUS_ASSEMBLING = 'ASSEMBLING'
