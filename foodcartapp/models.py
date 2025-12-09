@@ -120,7 +120,7 @@ class RestaurantMenuItem(models.Model):
     restaurant = models.ForeignKey(
         Restaurant,
         related_name='menu_items',
-        verbose_name="ресторан",
+        verbose_name='ресторан',
         on_delete=models.CASCADE,
     )
     product = models.ForeignKey(
@@ -143,7 +143,7 @@ class RestaurantMenuItem(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.restaurant.name} - {self.product.name}"
+        return f'{self.restaurant.name} - {self.product.name}'
 
 
 class Order(models.Model):
@@ -167,7 +167,13 @@ class Order(models.Model):
         (STATUS_DELIVERING, 'Доставка'),
         (STATUS_FINISHED, 'Завершён'),
     ]
-    status = models.CharField('статус', max_length=12, choices=STATUS_CHOICES, default=STATUS_NEW, db_index=True)
+    status = models.CharField(
+        'статус', 
+        max_length=12, 
+        choices=STATUS_CHOICES, 
+        default=STATUS_NEW, 
+        db_index=True
+    )
 
     PAYMENT_METHOD_CASH = 'cash'
     PAYMENT_METHOD_NON_CASH = 'non-cash'
@@ -175,7 +181,22 @@ class Order(models.Model):
         (PAYMENT_METHOD_CASH, 'наличные'),
         (PAYMENT_METHOD_NON_CASH, 'безнал'),
     ]
-    payment_method = models.CharField('способ оплаты', max_length=10, choices=PAYMENT_METHOD_CHOICES, default=PAYMENT_METHOD_CASH, db_index=True)
+    payment_method = models.CharField(
+        'способ оплаты', 
+        max_length=10, 
+        choices=PAYMENT_METHOD_CHOICES, 
+        default=PAYMENT_METHOD_CASH, 
+        db_index=True
+    )
+
+    cooking_restaurant = models.ForeignKey(
+        Restaurant,
+        verbose_name='ресторан',
+        related_name='orders',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
 
     class Meta:
         verbose_name = 'заказ'

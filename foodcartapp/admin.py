@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db.models import Count
 from django.shortcuts import reverse, redirect
 from django.templatetags.static import static
 from django.utils.html import format_html
@@ -84,8 +85,8 @@ class ProductAdmin(admin.ModelAdmin):
 
     class Media:
         css = {
-            "all": (
-                static("admin/foodcartapp.css")
+            'all': (
+                static('admin/foodcartapp.css')
             )
         }
 
@@ -116,9 +117,53 @@ class OrderItemsInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'status', 'firstname', 'lastname', 'phonenumber', 'address', 'items_count', 'payment_method', 'comment')
+    list_display = (
+        'id', 'status', 'firstname', 'lastname', 
+        'phonenumber', 'address', 'items_count', 
+        'payment_method', 'comment', 'cooking_restaurant'
+    )
     search_fields = ('id', 'firstname', 'lastname', 'phonenumber', 'address')
     inlines = [OrderItemsInline]
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'cooking_restaurant':
+            order_id = request.resolver_match.kwargs.get('object_id')
+
+            if order_id is not None:
+                from .models import OrderItems, Restaurant
+
+                product_ids = list(
+                    OrderItems.objects.filter(order_id=order_id)
+                    .values_list('product_id', flat=True)
+                )
+
+                if product_ids:
+                    needed_count = len(set(product_ids))
+                    qs = (
+                        Restaurant.objects
+                        .filter(
+                            menu_items__availability=True,
+                            menu_items__product_id__in=product_ids,
+                        )
+                        .annotate(
+                            matched_products=Count(
+                                'menu_items__product_id',
+                                distinct=True,
+                            )
+                        )
+                        .filter(matched_products=needed_count)
+                    )
+                else:
+                    qs = Restaurant.objects.none()
+
+                kwargs['queryset'] = qs
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def save_model(self, request, obj, form, change):
+        if obj.cooking_restaurant and obj.status == Order.STATUS_NEW:
+            obj.status = Order.STATUS_ASSEMBLING
+        super().save_model(request, obj, form, change)
 
     def response_change(self, request, obj):
         next_url = request.GET.get('next')
