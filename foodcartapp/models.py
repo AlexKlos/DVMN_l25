@@ -240,3 +240,17 @@ class OrderItems(models.Model):
 
     def __str__(self):
         return f'{self.product.name} x {self.quantity} (заказ {self.order_id})'
+
+
+class Address(models.Model):
+    address = models.CharField('адрес', max_length=255, unique=True, db_index=True)
+    lon = models.FloatField('долгота', null=True, blank=True)
+    lat = models.FloatField('широта', null=True, blank=True)
+    updated_at = models.DateTimeField('обновлено', auto_now=True)
+
+    class Meta:
+        verbose_name = 'адрес'
+        verbose_name_plural = 'адреса'
+
+    def __str__(self):
+        return self.address
