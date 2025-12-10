@@ -11,7 +11,7 @@ from foodcartapp.models import Address
 def _fetch_coordinates_from_api(address: str):
     base_url = 'https://geocode-maps.yandex.ru/1.x'
     try:
-        response = requests.get(
+        raw_response = requests.get(
             base_url,
             params={
                 'geocode': address,
@@ -20,9 +20,9 @@ def _fetch_coordinates_from_api(address: str):
             },
             timeout=5,
         )
-        response.raise_for_status()
-        data = response.json()
-        members = data['response']['GeoObjectCollection']['featureMember']
+        raw_response.raise_for_status()
+        response = raw_response.json()
+        members = response['response']['GeoObjectCollection']['featureMember']
         if not members:
             return None
         point = members[0]['GeoObject']['Point']['pos']
