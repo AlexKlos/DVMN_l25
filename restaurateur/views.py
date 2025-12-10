@@ -9,7 +9,8 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
 
-from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
+from .geodata import fetch_coordinates, distance_km
+from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem, OrderItems
 
 
 class Login(forms.Form):
@@ -93,48 +94,76 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    status_order = Case(
-        When(status=Order.STATUS_NEW, then=Value(0)),
-        When(status=Order.STATUS_ASSEMBLING, then=Value(1)),
-        When(status=Order.STATUS_DELIVERING, then=Value(2)),
-        default=Value(3),
-        output_field=IntegerField(),
-    )
-
     orders = (
         Order.objects
         .not_finished()
         .with_total_cost()
-        .prefetch_related('items__product')
-        .select_related('cooking_restaurant')
-        .annotate(status_order=status_order)
-        .order_by('status_order', 'id')
+        .annotate(
+            status_priority=Case(
+                When(status=Order.STATUS_NEW, then=1),
+                When(status=Order.STATUS_ASSEMBLING, then=2),
+                When(status=Order.STATUS_DELIVERING, then=3),
+                default=4,
+                output_field=IntegerField(),
+            )
+        )
+        .order_by('status_priority', 'registered_at')
+        .prefetch_related(
+            Prefetch(
+                'items',
+                queryset=OrderItems.objects.select_related('product'),
+            )
+        )
     )
 
     restaurants = list(
         Restaurant.objects.prefetch_related(
             Prefetch(
                 'menu_items',
-                queryset=RestaurantMenuItem.objects.filter(availability=True)
-                    .select_related('product'),
+                queryset=RestaurantMenuItem.objects
+                .filter(availability=True)
+                .select_related('product'),
+                to_attr='available_menu_items',
             )
         )
     )
 
-    restaurant_products = {
-        restaurant.id: {mi.product_id for mi in restaurant.menu_items.all()}
-        for restaurant in restaurants
-    }
+    restaurant_coords = {}
+    for restaurant in restaurants:
+        restaurant_coords[restaurant.id] = fetch_coordinates(restaurant.address)
 
     for order in orders:
-        product_ids = {item.product_id for item in order.items.all()}
-        possible_restaurants = [
-            restaurant
-            for restaurant in restaurants
-            if product_ids.issubset(restaurant_products[restaurant.id])
-        ]
-        order.available_restaurants = possible_restaurants
+        order_coords = fetch_coordinates(order.address)
 
-    return render(request, template_name='order_items.html', context={
+        if order_coords is None:
+            order.available_restaurants = []
+            order.geocoder_error = True
+            continue
+
+        order_product_ids = {item.product_id for item in order.items.all()}
+
+        candidates = []
+
+        for restaurant in restaurants:
+            rest_product_ids = {
+                item.product_id for item in restaurant.available_menu_items
+            }
+
+            if not order_product_ids.issubset(rest_product_ids):
+                continue
+
+            coords = restaurant_coords.get(restaurant.id)
+            if coords is None:
+                continue
+
+            dist = distance_km(order_coords, coords)
+            candidates.append((restaurant, dist))
+
+        candidates.sort(key=lambda pair: pair[1])
+
+        order.available_restaurants = candidates
+        order.geocoder_error = False if candidates else True
+
+    return render(request, 'order_items.html', context={
         'orders': orders,
     })

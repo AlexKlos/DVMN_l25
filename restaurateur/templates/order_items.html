@@ -38,17 +38,24 @@
         <td>
           {% if order.cooking_restaurant %}
             Готовит {{ order.cooking_restaurant.name }}
+        
+          {% elif order.geocoder_error %}
+            Ошибка определения координат
+        
           {% elif order.available_restaurants %}
             <details>
               <summary>Может быть приготовлен ресторанами:</summary>
               <ul>
-                {% for restaurant in order.available_restaurants %}
-                  <li>{{ restaurant.name }}</li>
+                {% for restaurant, distance in order.available_restaurants %}
+                  <li>
+                    {{ restaurant.name }} — {{ distance|floatformat:3 }} км
+                  </li>
                 {% endfor %}
               </ul>
             </details>
+        
           {% else %}
-            Ошибка определения координат
+            Нет подходящих ресторанов
           {% endif %}
         </td>
         <td>
