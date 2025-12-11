@@ -4,6 +4,7 @@ from datetime import timedelta
 import requests
 from django.conf import settings
 from django.utils import timezone
+from geopy.distance import distance
 
 from .models import Location
 
@@ -61,17 +62,11 @@ def fetch_coordinates(address: str):
     return coords
 
 
-def distance_km(a, b) -> float:
-    lon1, lat1 = a
-    lon2, lat2 = b
+def distance_km(coords1, coords2) -> float:
+    if coords1 is None or coords2 is None:
+        return None
+    
+    lon1, lat1 = coords1
+    lon2, lat2 = coords2
 
-    lon1 = math.radians(lon1)
-    lat1 = math.radians(lat1)
-    lon2 = math.radians(lon2)
-    lat2 = math.radians(lat2)
-
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-
-    h = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
-    return 2 * 6373 * math.atan2(math.sqrt(h), math.sqrt(1 - h))
+    return distance((lat1, lon1), (lat2, lon2)).km
