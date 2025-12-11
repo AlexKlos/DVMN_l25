@@ -98,6 +98,7 @@ def view_orders(request):
         Order.objects
         .not_finished()
         .with_total_cost()
+        .select_related('cooking_restaurant')
         .annotate(
             status_priority=Case(
                 When(status=Order.STATUS_NEW, then=1),
