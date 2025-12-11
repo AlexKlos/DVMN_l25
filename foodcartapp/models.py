@@ -147,16 +147,6 @@ class RestaurantMenuItem(models.Model):
 
 
 class Order(models.Model):
-    firstname = models.CharField('имя', max_length=50)
-    lastname = models.CharField('фамилия', max_length=50)
-    phonenumber = PhoneNumberField('телефон')
-    address = models.CharField('адрес', max_length=200)
-    objects = OrderQuerySet.as_manager()
-    comment = models.CharField('комментарий', max_length=200, blank=True)
-    registered_at = models.DateTimeField('создан', default=timezone.now, db_index=True)
-    called_at = models.DateTimeField('время звонка', null=True, blank=True, db_index=True)
-    delivered_at = models.DateTimeField('доставлен', null=True, blank=True, db_index=True)
-
     STATUS_NEW = 'NEW'
     STATUS_ASSEMBLING = 'ASSEMBLING'
     STATUS_DELIVERING = 'DELIVERING'
@@ -167,6 +157,22 @@ class Order(models.Model):
         (STATUS_DELIVERING, 'Доставка'),
         (STATUS_FINISHED, 'Завершён'),
     ]
+    PAYMENT_METHOD_CASH = 'cash'
+    PAYMENT_METHOD_NON_CASH = 'non-cash'
+    PAYMENT_METHOD_CHOICES = [
+        (PAYMENT_METHOD_CASH, 'наличные'),
+        (PAYMENT_METHOD_NON_CASH, 'безнал'),
+    ]
+
+    firstname = models.CharField('имя', max_length=50)
+    lastname = models.CharField('фамилия', max_length=50)
+    phonenumber = PhoneNumberField('телефон')
+    address = models.CharField('адрес', max_length=200)
+    objects = OrderQuerySet.as_manager()
+    comment = models.CharField('комментарий', max_length=200, blank=True)
+    registered_at = models.DateTimeField('создан', default=timezone.now, db_index=True)
+    called_at = models.DateTimeField('время звонка', null=True, blank=True, db_index=True)
+    delivered_at = models.DateTimeField('доставлен', null=True, blank=True, db_index=True)
     status = models.CharField(
         'статус', 
         max_length=12, 
@@ -174,13 +180,6 @@ class Order(models.Model):
         default=STATUS_NEW, 
         db_index=True
     )
-
-    PAYMENT_METHOD_CASH = 'cash'
-    PAYMENT_METHOD_NON_CASH = 'non-cash'
-    PAYMENT_METHOD_CHOICES = [
-        (PAYMENT_METHOD_CASH, 'наличные'),
-        (PAYMENT_METHOD_NON_CASH, 'безнал'),
-    ]
     payment_method = models.CharField(
         'способ оплаты', 
         max_length=10, 
@@ -188,7 +187,6 @@ class Order(models.Model):
         default=PAYMENT_METHOD_CASH, 
         db_index=True
     )
-
     cooking_restaurant = models.ForeignKey(
         Restaurant,
         verbose_name='ресторан',
