@@ -8,7 +8,6 @@ class OrderItemSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(
         queryset=Product.objects.all()
     )
-    quantity = serializers.IntegerField(min_value=1)
 
     class Meta:
         model = OrderItems
@@ -16,10 +15,6 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    firstname = serializers.CharField(max_length=50)
-    lastname = serializers.CharField(max_length=50)
-    phonenumber = PhoneNumberField(region='RU')
-    address = serializers.CharField(max_length=200)
     products = OrderItemSerializer(many=True, allow_empty=False, write_only=True)
 
     class Meta:
@@ -44,8 +39,6 @@ class OrderSerializer(serializers.ModelSerializer):
                     ))
                 OrderItems.objects.bulk_create(items)
 
-                # raise RuntimeError('test rolllback')
-    
                 return order
         except IntegrityError as e:
             raise serializers.ValidationError({'non_field_errors': [str(e)]})
