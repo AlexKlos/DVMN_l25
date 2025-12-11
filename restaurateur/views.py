@@ -9,8 +9,9 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
 
-from locations.geodata import fetch_coordinates, distance_km
 from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem, OrderItems
+from locations.geodata import fetch_coordinates, distance_km
+from locations.models import Location
 
 
 class Login(forms.Form):
@@ -129,12 +130,35 @@ def view_orders(request):
         )
     )
 
-    restaurant_coords = {}
-    for restaurant in restaurants:
-        restaurant_coords[restaurant.id] = fetch_coordinates(restaurant.address)
+    order_addresses = {order.address for order in orders if order.address}
+    restaurant_addresses = {restaurant.address for restaurant in restaurants if restaurant.address}
+    all_addresses = order_addresses | restaurant_addresses
+
+    locations = Location.objects.filter(address__in=all_addresses)
+    coords_by_address = {
+        location.address: (location.lon, location.lat)
+        for location in locations
+    }
+
+    def get_or_fetch_coords(address: str) -> tuple | None:
+        if not address:
+            return None
+        coords = coords_by_address.get(address)
+        if coords is not None:
+            return coords
+        coords = fetch_coordinates(address)
+        if coords is None:
+            return None
+        lon, lat = coords
+        Location.objects.update_or_create(
+            address=address,
+            defaults={'lon': lon, 'lat': lat},
+        )
+        coords_by_address[address] = coords
+        return coords
 
     for order in orders:
-        order_coords = fetch_coordinates(order.address)
+        order_coords = get_or_fetch_coords(order.address)
 
         if order_coords is None:
             order.available_restaurants = []
@@ -153,11 +177,11 @@ def view_orders(request):
             if not order_product_ids.issubset(rest_product_ids):
                 continue
 
-            coords = restaurant_coords.get(restaurant.id)
-            if coords is None:
+            rest_coords = get_or_fetch_coords(restaurant.address)
+            if rest_coords is None:
                 continue
 
-            dist = distance_km(order_coords, coords)
+            dist = distance_km(order_coords, rest_coords)
             candidates.append((restaurant, dist))
 
         candidates.sort(key=lambda pair: pair[1])
