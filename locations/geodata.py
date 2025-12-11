@@ -5,7 +5,7 @@ import requests
 from django.conf import settings
 from django.utils import timezone
 
-from foodcartapp.models import Address
+from .models import Location
 
 
 def _fetch_coordinates_from_api(address: str):
@@ -40,7 +40,7 @@ def fetch_coordinates(address: str):
     if not address_text:
         return None
 
-    obj, created = Address.objects.get_or_create(address=address_text)
+    obj, created = Location.objects.get_or_create(address=address_text)
     now = timezone.now()
     month_ago = now - timedelta(days=30)
 

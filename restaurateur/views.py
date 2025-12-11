@@ -9,7 +9,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
 
-from .geodata import fetch_coordinates, distance_km
+from locations.geodata import fetch_coordinates, distance_km
 from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem, OrderItems
 
 
