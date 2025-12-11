@@ -168,7 +168,6 @@ class Order(models.Model):
     lastname = models.CharField('фамилия', max_length=50)
     phonenumber = PhoneNumberField('телефон', db_index=True)
     address = models.CharField('адрес', max_length=200)
-    objects = OrderQuerySet.as_manager()
     comment = models.CharField('комментарий', max_length=200, blank=True)
     registered_at = models.DateTimeField('создан', default=timezone.now, db_index=True)
     called_at = models.DateTimeField('время звонка', null=True, blank=True, db_index=True)
@@ -194,6 +193,8 @@ class Order(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
     )
+
+    objects = OrderQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'заказ'
