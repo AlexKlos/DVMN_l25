@@ -135,10 +135,11 @@ def view_orders(request):
     all_addresses = order_addresses | restaurant_addresses
 
     locations = Location.objects.filter(address__in=all_addresses)
-    coords_by_address = {
-        location.address: (location.lon, location.lat)
-        for location in locations
-    }
+    coords_by_address = {}
+    for location in locations:
+        if location.lon is None or location.lat is None:
+            continue
+        coords_by_address[location.address] = (location.lon, location.lat)
 
     def get_or_fetch_coords(address: str) -> tuple | None:
         if not address:
